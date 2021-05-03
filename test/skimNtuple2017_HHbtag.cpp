@@ -68,6 +68,9 @@
 // Multiclass
 #include "../src/MulticlassInterface.cc"
 
+//diTauMLMass
+#include "diTauMLMassInterface.h"
+
 using namespace std ;
 using DNNVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
@@ -556,6 +559,11 @@ int main (int argc, char** argv)
     models.at(n) = ss_model.str();
   }
   HHbtagKLUBinterface HHbtagTagger(models, 2017);
+
+  // diTauML model
+  std::string diTauML_model = gConfigParser->readStringOption ("diTauMLMass::weights");
+  cout << "** INFO: diTauML_model: " << diTauML_model << endl;
+  ditauMLMass::diTauMLMass diTauML(diTauML_model);
 
   // ------------------------------
   //tau legs trigger SF for data and mc
@@ -5603,7 +5611,128 @@ int main (int argc, char** argv)
 		    } 
 		}
 	    }
-	}// if there's two jets in the event, at least
+
+            // diTauMLMass
+	
+	    vector<TLorentzVector> selectedJets;
+	    double diTauMLMass = -999.;
+	    double aha_x = 0., aha_y = 0., aha_z = 0., aha_e = 0.;
+	    int aha_n = 0;
+	    TLorentzVector tlv_leadingJet, tlv_subLeadingJet;
+	
+            for (unsigned int iJet = 0; iJet < theBigTree.jets_px->size (); ++iJet)
+            {
+
+            	// JET PF ID cut
+            	if (theBigTree.PFjetID->at (iJet) < PFjetID_WP) continue; // 0 ; don't pass PF Jet ID; 1: tight, 2: tightLepVeto
+
+            	// Skip the already selected b-jets
+            	if (int (iJet) == bjet1idx) continue;
+            	if (int (iJet) == bjet2idx) continue;
+	    	
+            	TLorentzVector ijet;
+            	ijet.SetPxPyPzE(theBigTree.jets_px->at(iJet), theBigTree.jets_py->at(iJet), theBigTree.jets_pz->at(iJet), theBigTree.jets_e ->at(iJet));
+            	if (doSmearing) ijet = ijet * jets_and_smearFactor[iJet];
+
+            	if (ijet.DeltaR (tlv_firstLepton) < lepCleaningCone) continue ;
+            	if (ijet.DeltaR (tlv_secondLepton) < lepCleaningCone) continue ;
+
+            	if(ijet.Pt() < 20.) continue;
+            	if(fabs(ijet.Eta()) > 4.7) continue; // max eta allowed: https://twiki.cern.ch/twiki/bin/view/CMS/HiggsToTauTauWorkingLegacyRun2#Jets
+
+            	// Apply PUjetID only to jets with pt < 50 GeV ( https://twiki.cern.ch/twiki/bin/view/CMS/HiggsToTauTauWorkingLegacyRun2#Jets )
+            	// PU jet ID WP = 2: loose
+            	if (PUjetID_WP > -1)
+            	{
+            	  if ( !(CheckBit(theBigTree.jets_PUJetIDupdated_WP->at(iJet), PUjetID_WP)) && ijet.Pt()<50.) continue;
+            	}
+
+            	// Apply further cleaning for 2017 noisy jets, as suggested by HTT group: https://twiki.cern.ch/twiki/bin/view/CMS/HiggsToTauTauWorkingLegacyRun2#Jets
+            	// The noisy jets to be removed are defined as: 20 < pt < 50 && abs(eta) > 2.65 && abs(eta) < 3.139
+            	if ( ijet.Pt()<50. && fabs(ijet.Eta())>2.65 && fabs(ijet.Eta())<3.139 ) continue;
+	    	
+	    	selectedJets.push_back(ijet);
+            }
+	
+	    if (selectedJets.size() < 2) continue;
+	    else if (selectedJets.size() == 2) 
+	    {
+	    	tlv_leadingJet = selectedJets.at(0);
+	    	tlv_subLeadingJet = selectedJets.at(1);
+	    	//std::cout << "leading pt: " << tlv_leadingJet.Pt() << " subleading pt: " << tlv_subLeadingJet.Pt() << std::endl;
+	    }
+	    else if (selectedJets.size() > 2)
+            {
+	    	tlv_leadingJet = selectedJets.at(0);
+	    	tlv_subLeadingJet = selectedJets.at(1);
+	    	//std::cout << "leading pt: " << tlv_leadingJet.Pt() << " subleading pt: " << tlv_subLeadingJet.Pt() << std::endl;
+            	for (unsigned int iJet = 2; iJet < selectedJets.size (); ++iJet)
+	    	{
+
+            	    aha_x += theBigTree.jets_px->at(iJet);
+            	    aha_y += theBigTree.jets_py->at(iJet);
+            	    aha_z += theBigTree.jets_pz->at(iJet);
+            	    aha_e += theBigTree.jets_e->at(iJet); 
+
+            	    aha_n += 1;
+	    	}
+	    }
+	    		
+            aha_x += (tlv_firstBjet.Px() + tlv_secondBjet.Px());
+            aha_y += (tlv_firstBjet.Py() + tlv_secondBjet.Py());
+            aha_z += (tlv_firstBjet.Pz() + tlv_secondBjet.Pz());
+            aha_e += (tlv_firstBjet.E() + tlv_secondBjet.E()); 
+
+            aha_n += 2;
+	    	
+	    TLorentzVector tlv_aha;
+            tlv_aha.SetPxPyPzE(aha_x,aha_y,aha_z,aha_e);
+
+            double mTtt = sqrt(2 * tlv_firstLepton.Pt() * tlv_secondLepton.Pt() * ( 1 - cos (deltaPhi(tlv_firstLepton.Phi(), tlv_secondLepton.Phi()))));
+	    double mTtot = Calculate_TotalMT(tlv_firstLepton, tlv_secondLepton, tlv_MET);
+	
+	    int N_neutrinos = 3;
+	    if (pairType == 2) N_neutrinos = 2;
+	    		  
+	    if (pairType == 0 || pairType == 1 || (pairType == 2 && tlv_firstLepton.Pt() > tlv_secondLepton.Pt()))
+	    {
+	
+	      diTauMLMass = diTauML.GetScore(tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(),
+            				     tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+            				     tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+            				     tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+            				     theBigTree.mT_Dau1->at (chosenTauPair), theBigTree.mT_Dau2->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+            				    );
+              
+	      /*diTauMLMass = diTauML.GetScore(tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(),
+            				     tlv_firstBjet.Pt(), tlv_firstBjet.Eta(), tlv_firstBjet.Phi(), tlv_secondBjet.Pt(), tlv_secondBjet.Eta(), tlv_secondBjet.Phi(),
+            				     tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+            				     tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+            				     theBigTree.mT_Dau1->at (chosenTauPair), theBigTree.mT_Dau2->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+            				    );*/
+	    }
+	
+	    else if (pairType == 2 && tlv_firstLepton.Pt() < tlv_secondLepton.Pt())
+	    {
+	
+	      diTauMLMass = diTauML.GetScore(tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(), tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), 
+            				     tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+            				     tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+            				     tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+            				     theBigTree.mT_Dau2->at (chosenTauPair), theBigTree.mT_Dau1->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+            				    );
+	    				    
+	      /*diTauMLMass = diTauML.GetScore(tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(), tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), 
+            				     tlv_firstBjet.Pt(), tlv_firstBjet.Eta(), tlv_firstBjet.Phi(), tlv_secondBjet.Pt(), tlv_secondBjet.Eta(), tlv_secondBjet.Phi(),
+            				     tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+            				     tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+            				     theBigTree.mT_Dau2->at (chosenTauPair), theBigTree.mT_Dau1->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+            				    );*/
+	    }
+	
+            theSmallTree.m_tauH_ML_mass = diTauMLMass;				
+
+      }// if there's two jets in the event, at least
 
       if (isMC) selectedEvents += theBigTree.aMCatNLOweight ;  //FIXME: probably wrong, but unused up to now
       else selectedEvents += 1 ;
