@@ -181,6 +181,9 @@ struct smallTree
       m_met_phi = -1. ;
       m_met_et = -1. ;
 
+      m_puppi_met_phi = -1. ;
+      m_puppi_met_et = -1. ;
+
       m_METx = 0.  ;
       m_METy = 0.  ;
       m_METx_jetup.clear()  ;
@@ -1198,6 +1201,8 @@ struct smallTree
 
       m_smallT->Branch ("met_phi", &m_met_phi, "met_phi/F") ;
       m_smallT->Branch ("met_et", &m_met_et, "met_et/F") ;
+      m_smallT->Branch ("puppi_met_phi", &m_puppi_met_phi, "puppi_met_phi/F") ;
+      m_smallT->Branch ("puppi_met_et", &m_puppi_met_et, "puppi_met_et/F") ;
       m_smallT->Branch ("METx", &m_METx, "METx/F") ;
       m_smallT->Branch ("METy", &m_METy, "METy/F") ;
 
@@ -2221,6 +2226,8 @@ struct smallTree
   // MET
   Float_t m_met_phi ;
   Float_t m_met_et ;
+  Float_t m_puppi_met_phi ;
+  Float_t m_puppi_met_et ;
   Float_t m_METx ;
   Float_t m_METy ;
   std::vector<Float_t> m_METx_jetup ; 

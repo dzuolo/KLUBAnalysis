@@ -36,6 +36,8 @@ public :
    Float_t         metphi;
    Float_t         met_er;
    Float_t         met_er_phi;
+   Float_t         PUPPImet;
+   Float_t         PUPPImetphi;
    Int_t           npv;
    Float_t         npu;
    Float_t         PUNumInteractions;
@@ -460,6 +462,8 @@ public :
    TBranch        *b_metphi;   //!
    TBranch        *b_met_er;   //!
    TBranch        *b_met_er_phi;   //!
+   TBranch        *b_PUPPImet;   //!
+   TBranch        *b_PUPPImetphi;   //!
    TBranch        *b_npv;   //!
    TBranch        *b_npu;   //!
    TBranch        *b_PUNumInteractions;   //!
@@ -1283,6 +1287,8 @@ public :
        fChain->SetBranchAddress("metphi", &metphi, &b_metphi);
        fChain->SetBranchAddress("met_er", &met_er, &b_met_er);
        fChain->SetBranchAddress("met_er_phi", &met_er_phi, &b_met_er_phi);
+       fChain->SetBranchAddress("PUPPImet", &PUPPImet, &b_PUPPImet);
+       fChain->SetBranchAddress("PUPPImetphi", &PUPPImetphi, &b_PUPPImetphi);
        fChain->SetBranchAddress("npv", &npv, &b_npv);
        fChain->SetBranchAddress("npu", &npu, &b_npu);
        fChain->SetBranchAddress("rho", &rho, &b_rho);

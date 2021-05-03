@@ -2214,12 +2214,16 @@ int main (int argc, char** argv)
       theSmallTree.m_lheNOutB = theBigTree.lheNOutB ;
       theSmallTree.m_met_phi   = vMET.Phi();
       theSmallTree.m_met_et    = vMET.Mod();
+      theSmallTree.m_puppi_met_phi   = theBigTree.PUPPImetphi;
+      theSmallTree.m_puppi_met_et    = theBigTree.PUPPImet;
       theSmallTree.m_METx      = vMET.X();
       theSmallTree.m_METy      = vMET.Y();
       theSmallTree.m_met_cov00 = theBigTree.MET_cov00->at (chosenTauPair);
       theSmallTree.m_met_cov01 = theBigTree.MET_cov01->at (chosenTauPair);
       theSmallTree.m_met_cov10 = theBigTree.MET_cov10->at (chosenTauPair);
       theSmallTree.m_met_cov11 = theBigTree.MET_cov11->at (chosenTauPair);
+      
+      cout << "PUPPI MET - et: " << theBigTree.PUPPImet << " phi: " << theBigTree.PUPPImetphi << endl;
 
       // L1ECALPrefiringWeight - https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1ECALPrefiringWeightRecipe
       theSmallTree.m_L1pref_weight = theBigTree.prefiringweight;
