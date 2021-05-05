@@ -183,6 +183,15 @@ struct smallTree
 
       m_puppi_met_phi = -1. ;
       m_puppi_met_et = -1. ;
+      m_PUPPImetShifted=0;
+      m_PUPPImetShiftedphi=0.;
+      m_PuppiMETCov00=0.;
+      m_PuppiMETCov01=0.;
+      m_PuppiMETCov10=0.;
+      m_PuppiMETCov11=0.;
+      m_PuppiMETsignif=0.;
+      m_PUPPImetShiftedX=0.;
+      m_PUPPImetShiftedY=0.;
 
       m_METx = 0.  ;
       m_METy = 0.  ;
@@ -451,12 +460,14 @@ struct smallTree
       m_tauH_e = -1. ;
       m_tauH_mass = -1. ;
       m_tauH_SVFIT_mass = -1. ;
+      m_tauH_SVFIT_mass_puppi = -1. ;
       m_tauH_SVFIT_pt = -1. ;
       m_tauH_SVFIT_eta = -1. ;
       m_tauH_SVFIT_phi = -1. ;
       m_tauH_SVFIT_METphi = -1. ;
       m_tauH_SVFIT_METrho = -1. ;
       m_tauH_ML_mass = -1.;      
+      m_tauH_ML_mass_puppi = -1.;      
       
       m_tauH_SVFIT_mass_up   = -1. ;
       m_tauH_SVFIT_mass_down = -1. ;
@@ -1203,6 +1214,15 @@ struct smallTree
       m_smallT->Branch ("met_et", &m_met_et, "met_et/F") ;
       m_smallT->Branch ("puppi_met_phi", &m_puppi_met_phi, "puppi_met_phi/F") ;
       m_smallT->Branch ("puppi_met_et", &m_puppi_met_et, "puppi_met_et/F") ;
+      m_smallT->Branch ("PUPPImetShifted",&m_PUPPImetShifted,"PUPPImetShifted/F");
+      m_smallT->Branch ("PUPPImetShiftedphi",&m_PUPPImetShiftedphi,"PUPPImetShiftedphi/F");
+      m_smallT->Branch ("PuppiMETCov00",&m_PuppiMETCov00,"PuppiMETCov00/F");
+      m_smallT->Branch ("PuppiMETCov01",&m_PuppiMETCov01,"PuppiMETCov01/F");
+      m_smallT->Branch ("PuppiMETCov10",&m_PuppiMETCov10,"PuppiMETCov10/F");
+      m_smallT->Branch ("PuppiMETCov11",&m_PuppiMETCov11,"PuppiMETCov11/F");
+      m_smallT->Branch ("PuppiMETsignif", &m_PuppiMETsignif, "PuppiMETsignif/F");      
+      m_smallT->Branch ("PUPPImetShiftedX",&m_PUPPImetShiftedX,"PUPPImetShiftedX/F");
+      m_smallT->Branch ("PUPPImetShiftedY",&m_PUPPImetShiftedY,"PUPPImetShiftedY/F");
       m_smallT->Branch ("METx", &m_METx, "METx/F") ;
       m_smallT->Branch ("METy", &m_METy, "METy/F") ;
 
@@ -1472,6 +1492,7 @@ struct smallTree
       m_smallT->Branch ("tauH_e", &m_tauH_e, "tauH_e/F") ;
       m_smallT->Branch ("tauH_mass", &m_tauH_mass, "tauH_mass/F") ;
       m_smallT->Branch ("tauH_SVFIT_mass", &m_tauH_SVFIT_mass, "tauH_SVFIT_mass/F") ;
+      m_smallT->Branch ("tauH_SVFIT_mass_puppi", &m_tauH_SVFIT_mass_puppi, "tauH_SVFIT_mass_puppi/F") ;
       m_smallT->Branch ("tauH_SVFIT_pt", &m_tauH_SVFIT_pt, "tauH_SVFIT_pt/F") ;
       m_smallT->Branch ("tauH_SVFIT_eta", &m_tauH_SVFIT_eta, "tauH_SVFIT_eta/F") ;
       m_smallT->Branch ("tauH_SVFIT_phi", &m_tauH_SVFIT_phi, "tauH_SVFIT_phi/F") ;
@@ -1482,6 +1503,7 @@ struct smallTree
       m_smallT->Branch ("tauH_SVFIT_mass_METup", &m_tauH_SVFIT_mass_METup, "tauH_SVFIT_mass_METup/F") ;
       m_smallT->Branch ("tauH_SVFIT_mass_METdown", &m_tauH_SVFIT_mass_METdown, "tauH_SVFIT_mass_METdown/F") ;
       m_smallT->Branch ("tauH_ML_mass", &m_tauH_ML_mass, "tauH_ML_mass/F") ;
+      m_smallT->Branch ("tauH_ML_mass_puppi", &m_tauH_ML_mass_puppi, "tauH_ML_mass_puppi/F") ;
 
       m_smallT->Branch ("bH_pt", &m_bH_pt, "bH_pt/F") ;
       m_smallT->Branch ("bH_eta", &m_bH_eta, "bH_eta/F") ;
@@ -1679,7 +1701,7 @@ struct smallTree
       m_smallT->Branch ("bH_mass_raw_jetdownTot"   , &m_bH_mass_raw_jetdownTot   , "bH_mass_raw_jetdownTot/F");
 
       m_smallT->Branch ("HHKin_mass_raw",&m_HHKin_mass_raw ,"HHKin_mass_raw/F");
-     m_smallT->Branch ("HHKin_mass_raw_chi2", &m_HHKin_mass_raw_chi2, "HHKin_mass_raw_chi2/F") ;
+      m_smallT->Branch ("HHKin_mass_raw_chi2", &m_HHKin_mass_raw_chi2, "HHKin_mass_raw_chi2/F") ;
       m_smallT->Branch ("HHKin_mass_raw_convergence", &m_HHKin_mass_raw_convergence, "HHKin_mass_raw_convergence/I") ;
       m_smallT->Branch ("HHKin_mass_raw_prob", &m_HHKin_mass_raw_prob, "HHKin_mass_raw_prob/F") ;
 
@@ -2228,6 +2250,15 @@ struct smallTree
   Float_t m_met_et ;
   Float_t m_puppi_met_phi ;
   Float_t m_puppi_met_et ;
+  Float_t m_PUPPImetShifted;
+  Float_t m_PUPPImetShiftedphi;
+  Float_t m_PuppiMETCov00;
+  Float_t m_PuppiMETCov01;
+  Float_t m_PuppiMETCov10;
+  Float_t m_PuppiMETCov11;
+  Float_t m_PuppiMETsignif;
+  Float_t m_PUPPImetShiftedX;
+  Float_t m_PUPPImetShiftedY;
   Float_t m_METx ;
   Float_t m_METy ;
   std::vector<Float_t> m_METx_jetup ; 
@@ -2500,6 +2531,7 @@ struct smallTree
 
   
   Float_t m_tauH_SVFIT_mass ;
+  Float_t m_tauH_SVFIT_mass_puppi ;
   Float_t m_tauH_SVFIT_pt ;
   Float_t m_tauH_SVFIT_eta ;
   Float_t m_tauH_SVFIT_phi ;
@@ -2510,6 +2542,7 @@ struct smallTree
   Float_t m_tauH_SVFIT_mass_METup ;
   Float_t m_tauH_SVFIT_mass_METdown ;
   Float_t m_tauH_ML_mass ;
+  Float_t m_tauH_ML_mass_puppi ;
 
   // the bb-H candidate
   Float_t m_bH_pt ;

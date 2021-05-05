@@ -38,6 +38,15 @@ public :
    Float_t         met_er_phi;
    Float_t         PUPPImet;
    Float_t         PUPPImetphi;
+   Float_t         PUPPImetShifted;
+   Float_t         PUPPImetShiftedphi;
+   Float_t         PuppiMETCov00;
+   Float_t         PuppiMETCov01;
+   Float_t         PuppiMETCov10;
+   Float_t         PuppiMETCov11;
+   Float_t         PuppiMETsignif;
+   Float_t         PUPPImetShiftedX;
+   Float_t         PUPPImetShiftedY;   
    Int_t           npv;
    Float_t         npu;
    Float_t         PUNumInteractions;
@@ -464,6 +473,15 @@ public :
    TBranch        *b_met_er_phi;   //!
    TBranch        *b_PUPPImet;   //!
    TBranch        *b_PUPPImetphi;   //!
+   TBranch        *b_PUPPImetShifted;
+   TBranch        *b_PUPPImetShiftedphi;
+   TBranch        *b_PuppiMETCov00;
+   TBranch        *b_PuppiMETCov01;
+   TBranch        *b_PuppiMETCov10;
+   TBranch        *b_PuppiMETCov11;
+   TBranch        *b_PuppiMETsignif;
+   TBranch        *b_PUPPImetShiftedX;
+   TBranch        *b_PUPPImetShiftedY;   
    TBranch        *b_npv;   //!
    TBranch        *b_npu;   //!
    TBranch        *b_PUNumInteractions;   //!
@@ -1289,6 +1307,15 @@ public :
        fChain->SetBranchAddress("met_er_phi", &met_er_phi, &b_met_er_phi);
        fChain->SetBranchAddress("PUPPImet", &PUPPImet, &b_PUPPImet);
        fChain->SetBranchAddress("PUPPImetphi", &PUPPImetphi, &b_PUPPImetphi);
+       fChain->SetBranchAddress("PUPPImetShifted",&PUPPImetShifted, &b_PUPPImetShifted);
+       fChain->SetBranchAddress("PUPPImetShiftedphi", &PUPPImetShiftedphi, &b_PUPPImetShiftedphi);
+       fChain->SetBranchAddress("PuppiMETCov00", &PuppiMETCov00, &b_PuppiMETCov00);
+       fChain->SetBranchAddress("PuppiMETCov01", &PuppiMETCov01, &b_PuppiMETCov01);
+       fChain->SetBranchAddress("PuppiMETCov10", &PuppiMETCov10, &b_PuppiMETCov10);
+       fChain->SetBranchAddress("PuppiMETCov11", &PuppiMETCov11, &b_PuppiMETCov11);
+       fChain->SetBranchAddress("PuppiMETsignif", &PuppiMETsignif, &b_PuppiMETsignif);       
+       fChain->SetBranchAddress("PUPPImetShiftedX",&PUPPImetShiftedX,&b_PUPPImetShiftedX);
+       fChain->SetBranchAddress("PUPPImetShiftedY",&PUPPImetShiftedY,&b_PUPPImetShiftedY);
        fChain->SetBranchAddress("npv", &npv, &b_npv);
        fChain->SetBranchAddress("npu", &npu, &b_npu);
        fChain->SetBranchAddress("rho", &rho, &b_rho);
