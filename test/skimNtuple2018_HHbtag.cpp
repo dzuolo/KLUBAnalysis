@@ -68,6 +68,9 @@
 // Multiclass
 #include "../src/MulticlassInterface.cc"
 
+//diTauMLMass
+#include "diTauMLMassInterface.h"
+
 using namespace std ;
 using DNNVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
@@ -558,6 +561,11 @@ int main (int argc, char** argv)
     models.at(n) = ss_model.str();
   }
   HHbtagKLUBinterface HHbtagTagger(models, 2018);
+
+  // diTauML model
+  std::string diTauML_model = gConfigParser->readStringOption ("diTauMLMass::weights");
+  cout << "** INFO: diTauML_model: " << diTauML_model << endl;
+  ditauMLMass::diTauMLMass diTauML(diTauML_model);
 
   // ------------------------------
   //tau legs trigger SF for data and mc
@@ -2133,6 +2141,10 @@ int main (int argc, char** argv)
       TLorentzVector tlv_MET;
       tlv_MET.SetPxPyPzE(theBigTree.METx->at(chosenTauPair), theBigTree.METy->at(chosenTauPair), 0, std::hypot(theBigTree.METx->at(chosenTauPair), theBigTree.METy->at(chosenTauPair)));
 
+      TVector2 vPUPPIMET(theBigTree.PUPPImetShiftedX , theBigTree.PUPPImetShiftedY);
+      TLorentzVector tlv_PUPPIMET;
+      tlv_PUPPIMET.SetPxPyPzE(theBigTree.PUPPImetShiftedX, theBigTree.PUPPImetShiftedY, 0, std::hypot(theBigTree.PUPPImetShiftedX, theBigTree.PUPPImetShiftedY));
+
       theSmallTree.m_tauH_SVFIT_mass = theBigTree.SVfitMass->at (chosenTauPair) ;
 
       if (doSmearing)
@@ -2164,6 +2176,24 @@ int main (int argc, char** argv)
           theSmallTree.m_tauHsvfitMet_deltaPhi = deltaPhi (vMET.Phi(), tlv_tauH_SVFIT.Phi ()) ;
           theSmallTree.m_ditau_deltaR_per_tauHsvfitpt = tlv_firstLepton.DeltaR(tlv_secondLepton) * tlv_tauH_SVFIT.Pt();
         }
+        
+	// Smear PUPPI MET
+        float PUPPIMETx = theBigTree.PUPPImetShiftedX;
+        float PUPPIMETy = theBigTree.PUPPImetShiftedY;
+        TVector2 puppiMetSmeared = getShiftedMET_smear(PUPPIMETx, PUPPIMETy, theBigTree, jets_and_smearFactor);
+        vPUPPIMET = puppiMetSmeared;
+        tlv_PUPPIMET.SetPxPyPzE(puppiMetSmeared.Px(), puppiMetSmeared.Py(), 0, std::hypot(puppiMetSmeared.Px(), puppiMetSmeared.Py()));
+
+        // Recompute SVfit after smearing the MET
+        TMatrixD puppiMetcov (2, 2) ;
+        puppiMetcov (0,0) = theBigTree.PuppiMETCov00 ;
+        puppiMetcov (1,0) = theBigTree.PuppiMETCov01 ;
+        puppiMetcov (0,1) = theBigTree.PuppiMETCov10 ;
+        puppiMetcov (1,1) = theBigTree.PuppiMETCov11 ;
+	 
+        SVfitKLUBinterface algo_central_puppi(0, tlv_firstLepton, tlv_secondLepton, tlv_PUPPIMET, puppiMetcov, pType, theSmallTree.m_dau1_decayMode, theSmallTree.m_dau2_decayMode);
+        std::vector<double> svfitResSmearedPuppi = algo_central_puppi.FitAndGetResult();
+        theSmallTree.m_tauH_SVFIT_mass_puppi = svfitResSmearedPuppi.at(3);
       }
 
       if (!doSmearing && theBigTree.SVfitMass->at (chosenTauPair) > -900.)
@@ -2251,9 +2281,22 @@ int main (int argc, char** argv)
       theSmallTree.m_met_cov01 = theBigTree.MET_cov01->at (chosenTauPair);
       theSmallTree.m_met_cov10 = theBigTree.MET_cov10->at (chosenTauPair);
       theSmallTree.m_met_cov11 = theBigTree.MET_cov11->at (chosenTauPair);
-
+      theSmallTree.m_puppi_met_phi   = theBigTree.PUPPImetphi;
+      theSmallTree.m_puppi_met_et    = theBigTree.PUPPImet;
+      theSmallTree.m_PUPPImetShifted = theBigTree.PUPPImetShifted;
+      theSmallTree.m_PUPPImetShiftedphi = theBigTree.PUPPImetShiftedphi;
+      theSmallTree.m_PuppiMETCov00 = theBigTree.PuppiMETCov00;
+      theSmallTree.m_PuppiMETCov01 = theBigTree.PuppiMETCov01;
+      theSmallTree.m_PuppiMETCov10 = theBigTree.PuppiMETCov10;
+      theSmallTree.m_PuppiMETCov11 = theBigTree.PuppiMETCov11;
+      theSmallTree.m_PuppiMETsignif = theBigTree.PuppiMETsignif;
+      theSmallTree.m_PUPPImetShiftedX = theBigTree.PUPPImetShiftedX;
+      theSmallTree.m_PUPPImetShiftedY = theBigTree.PUPPImetShiftedY;
       // L1ECALPrefiringWeight - https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1ECALPrefiringWeightRecipe
       theSmallTree.m_L1pref_weight = theBigTree.prefiringweight;
+
+      cout << "PUPPI MET - cov00: " << theBigTree.PuppiMETCov00 << " cov01: " << theBigTree.PuppiMETCov01 << " cov10: " << theBigTree.PuppiMETCov10 << " cov11: " << theBigTree.PuppiMETCov11 
+           << " et: " << theBigTree.PUPPImetShifted << " phi: " << theBigTree.PUPPImetShiftedphi << " px: " << theBigTree.PUPPImetShiftedX << " py: " << theBigTree.PUPPImetShiftedY << endl;
 
       if (DEBUG)
         {
@@ -5466,8 +5509,129 @@ int main (int argc, char** argv)
                     }
                 }
             }
-        }// if there's two jets in the event, at least
 
+	// diTauMLMass
+
+        vector<TLorentzVector> selectedJets;
+        double diTauMLMass = -999.;
+        double diTauMLMassPUPPI = -999.;
+        double aha_x = 0., aha_y = 0., aha_z = 0., aha_e = 0.;
+        int aha_n = 0;
+        TLorentzVector tlv_leadingJet, tlv_subLeadingJet;
+	
+	for (unsigned int iJet = 0; iJet < theBigTree.jets_px->size (); ++iJet)
+	{
+            
+	    // JET PF ID cut
+            if (theBigTree.PFjetID->at (iJet) < PFjetID_WP) continue; // 0 ; don't pass PF Jet ID; 1: tight, 2: tightLepVeto
+
+            // Skip the already selected b-jets
+            if (int (iJet) == bjet1idx) continue;
+            if (int (iJet) == bjet2idx) continue;
+
+            TLorentzVector ijet;
+            ijet.SetPxPyPzE(theBigTree.jets_px->at(iJet), theBigTree.jets_py->at(iJet), theBigTree.jets_pz->at(iJet), theBigTree.jets_e ->at(iJet));
+
+            if (doSmearing) ijet = ijet * jets_and_smearFactor[iJet];
+
+            if (ijet.DeltaR (tlv_firstLepton) < lepCleaningCone) continue ;
+            if (ijet.DeltaR (tlv_secondLepton) < lepCleaningCone) continue ;
+
+            if(ijet.Pt() < 20.) continue;
+            if(fabs(ijet.Eta()) > 4.7) continue; // max eta allowed: https://twiki.cern.ch/twiki/bin/view/CMS/HiggsToTauTauWorkingLegacyRun2#Jets
+
+            // Apply PUjetID only to jets with pt < 50 GeV ( https://twiki.cern.ch/twiki/bin/view/CMS/HiggsToTauTauWorkingLegacyRun2#Jets )
+            // PU jet ID WP = 2: loose
+            if (PUjetID_WP > -1)
+            {
+                if ( !(CheckBit(theBigTree.jets_PUJetIDupdated_WP->at(iJet), PUjetID_WP)) && ijet.Pt()<50.) continue;
+            }
+
+            selectedJets.push_back(ijet);
+        }
+	
+        if (selectedJets.size() < 2) continue;
+        else if (selectedJets.size() == 2) 
+        {
+            tlv_leadingJet = selectedJets.at(0);
+            tlv_subLeadingJet = selectedJets.at(1);
+            //std::cout << "leading pt: " << tlv_leadingJet.Pt() << " subleading pt: " << tlv_subLeadingJet.Pt() << std::endl;
+        }
+        else if (selectedJets.size() > 2)
+        {
+            tlv_leadingJet = selectedJets.at(0);
+            tlv_subLeadingJet = selectedJets.at(1);
+            //std::cout << "leading pt: " << tlv_leadingJet.Pt() << " subleading pt: " << tlv_subLeadingJet.Pt() << std::endl;
+            for (unsigned int iJet = 2; iJet < selectedJets.size (); ++iJet)
+            {
+	        aha_x += theBigTree.jets_px->at(iJet);
+	        aha_y += theBigTree.jets_py->at(iJet);
+	        aha_z += theBigTree.jets_pz->at(iJet);
+	        aha_e += theBigTree.jets_e->at(iJet); 
+	        aha_n += 1;
+            }
+        }
+	    		
+        aha_x += (tlv_firstBjet.Px() + tlv_secondBjet.Px());
+        aha_y += (tlv_firstBjet.Py() + tlv_secondBjet.Py());
+        aha_z += (tlv_firstBjet.Pz() + tlv_secondBjet.Pz());
+        aha_e += (tlv_firstBjet.E() + tlv_secondBjet.E()); 
+        aha_n += 2;
+    
+        TLorentzVector tlv_aha;
+        tlv_aha.SetPxPyPzE(aha_x,aha_y,aha_z,aha_e);
+
+        double mTtt = sqrt(2 * tlv_firstLepton.Pt() * tlv_secondLepton.Pt() * ( 1 - cos (deltaPhi(tlv_firstLepton.Phi(), tlv_secondLepton.Phi()))));
+        double mTtot = Calculate_TotalMT(tlv_firstLepton, tlv_secondLepton, tlv_MET);
+        double mTtotPUPPI = Calculate_TotalMT(tlv_firstLepton, tlv_secondLepton, tlv_PUPPIMET);
+
+        int N_neutrinos = 3;
+        if (pairType == 2) N_neutrinos = 2;
+	    		  
+        if (pairType == 0 || pairType == 1 || (pairType == 2 && tlv_firstLepton.Pt() > tlv_secondLepton.Pt()))
+        {
+
+            diTauMLMass = diTauML.GetScore(tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(),
+				           tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+				           tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+				           tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+				           theBigTree.mT_Dau1->at (chosenTauPair), theBigTree.mT_Dau2->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+				           );
+
+            diTauMLMassPUPPI = diTauML.GetScore(tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(),
+				                tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+				                tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+				                tlv_PUPPIMET.Pt(), tlv_PUPPIMET.Phi(), theBigTree.PuppiMETCov00, theBigTree.PuppiMETCov01, theBigTree.PuppiMETCov11,
+				                theBigTree.mT_Dau1->at (chosenTauPair), theBigTree.mT_Dau2->at (chosenTauPair), mTtt, mTtotPUPPI, theBigTree.npu, N_neutrinos
+				                );
+
+         }
+	
+         else if (pairType == 2 && tlv_firstLepton.Pt() < tlv_secondLepton.Pt())
+         {
+
+             diTauMLMass = diTauML.GetScore(tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(), tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), 
+				            tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+				            tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+				            tlv_MET.Pt(), tlv_MET.Phi(), theBigTree.MET_cov00->at(chosenTauPair), theBigTree.MET_cov01->at(chosenTauPair), theBigTree.MET_cov11->at(chosenTauPair),
+				            theBigTree.mT_Dau2->at (chosenTauPair), theBigTree.mT_Dau1->at (chosenTauPair), mTtt, mTtot, theBigTree.npu, N_neutrinos
+				            );
+
+             diTauMLMassPUPPI = diTauML.GetScore(tlv_secondLepton.Pt(), tlv_secondLepton.Eta(), tlv_secondLepton.Phi(), tlv_firstLepton.Pt(), tlv_firstLepton.Eta(), tlv_firstLepton.Phi(), 
+				                 tlv_leadingJet.Pt(), tlv_leadingJet.Eta(), tlv_leadingJet.Phi(), tlv_subLeadingJet.Pt(), tlv_subLeadingJet.Eta(), tlv_subLeadingJet.Phi(),
+				                 tlv_aha.Pt(), tlv_aha.Eta(), tlv_aha.Phi(), aha_n, 
+				                 tlv_PUPPIMET.Pt(), tlv_PUPPIMET.Phi(), theBigTree.PuppiMETCov00, theBigTree.PuppiMETCov01, theBigTree.PuppiMETCov11,
+				                 theBigTree.mT_Dau1->at (chosenTauPair), theBigTree.mT_Dau2->at (chosenTauPair), mTtt, mTtotPUPPI, theBigTree.npu, N_neutrinos
+				                 );
+
+         }
+
+         theSmallTree.m_tauH_ML_mass = diTauMLMass;				
+         theSmallTree.m_tauH_ML_mass_puppi = diTauMLMassPUPPI;	
+
+
+        }// if there's two jets in the event, at least
+	
       if (isMC) selectedEvents += theBigTree.aMCatNLOweight ;  //FIXME: probably wrong, but unused up to now
       else selectedEvents += 1 ;
       ++selectedNoWeightsEventsNum ;
