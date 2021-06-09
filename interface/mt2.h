@@ -24,7 +24,7 @@
 #include "Math/Functor.h"
 //#endif
 
-typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> > LorentzVector;
+//typedef ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double> > LorentzVector;
 
 Double_t mTsq(TVector2 bT, TVector2 cT, Float_t mB, Float_t mC) {
   Float_t eB = TMath::Sqrt(mB*mB+ bT*bT);

@@ -468,6 +468,10 @@ struct smallTree
       m_tauH_SVFIT_METrho = -1. ;
       m_tauH_ML_mass = -1.;      
       m_tauH_ML_mass_puppi = -1.;      
+      m_tauH_fastMTT_mass = -1. ;
+      m_tauH_fastMTT_pt = -1. ;
+      m_tauH_fastMTT_eta = -1. ;
+      m_tauH_fastMTT_phi = -1. ;
       
       m_tauH_SVFIT_mass_up   = -1. ;
       m_tauH_SVFIT_mass_down = -1. ;
@@ -1504,6 +1508,10 @@ struct smallTree
       m_smallT->Branch ("tauH_SVFIT_mass_METdown", &m_tauH_SVFIT_mass_METdown, "tauH_SVFIT_mass_METdown/F") ;
       m_smallT->Branch ("tauH_ML_mass", &m_tauH_ML_mass, "tauH_ML_mass/F") ;
       m_smallT->Branch ("tauH_ML_mass_puppi", &m_tauH_ML_mass_puppi, "tauH_ML_mass_puppi/F") ;
+      m_smallT->Branch ("tauH_fastMTT_mass", &m_tauH_fastMTT_mass, "tauH_fastMTT_mass/F") ;
+      m_smallT->Branch ("tauH_fastMTT_pt", &m_tauH_fastMTT_pt, "tauH_fastMTT_pt/F") ;
+      m_smallT->Branch ("tauH_fastMTT_eta", &m_tauH_fastMTT_eta, "tauH_fastMTT_eta/F") ;
+      m_smallT->Branch ("tauH_fastMTT_phi", &m_tauH_fastMTT_phi, "tauH_fastMTT_phi/F") ;
 
       m_smallT->Branch ("bH_pt", &m_bH_pt, "bH_pt/F") ;
       m_smallT->Branch ("bH_eta", &m_bH_eta, "bH_eta/F") ;
@@ -2543,6 +2551,10 @@ struct smallTree
   Float_t m_tauH_SVFIT_mass_METdown ;
   Float_t m_tauH_ML_mass ;
   Float_t m_tauH_ML_mass_puppi ;
+  Float_t m_tauH_fastMTT_mass ;
+  Float_t m_tauH_fastMTT_pt ;
+  Float_t m_tauH_fastMTT_eta ;
+  Float_t m_tauH_fastMTT_phi ;
 
   // the bb-H candidate
   Float_t m_bH_pt ;
